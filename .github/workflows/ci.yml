@@ -1,0 +1,37 @@
+on:
+  push:
+    branches:
+      - master
+
+env:
+  NODE_VERSION: '14.x'
+
+jobs:
+  build:
+    name: Build Execution File
+    runs-on: macos-11
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    - name: Execute backup script
+      run: |
+        npm install
+        npm run build --if-present
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Linux
+        path: |
+          dist/*.AppImage
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Windows
+        path: |
+          dist/*.exe
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Mac
+        path: |
+          dist/*.dmg
