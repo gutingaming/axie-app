@@ -1,0 +1,12 @@
+appId: com.gutingaming.axieclaimtool
+productName: Axie Infinity Claim Tool
+copyright: Copyright © 2018 GutinGaming
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null
