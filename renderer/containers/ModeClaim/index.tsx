@@ -14,12 +14,7 @@ import transferSlp from "../../api/transferSlp";
 function ModeClaim() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const {
-    accounts,
-    mainAccount,
-    setAccounts,
-    balances,
-  } = useAxieAccounts();
+  const { accounts, mainAccount, setAccounts, balances } = useAxieAccounts();
 
   const {
     isModalOpen: isAddAxieAccountModalOpen,
@@ -87,22 +82,25 @@ function ModeClaim() {
       randomMessage,
     });
 
-    const data = await claimSlp({
-      address,
-      accessToken,
-    });
+    try {
+      const data = await claimSlp({
+        address,
+        accessToken,
+      });
 
-    if (data.error) {
-      window.alert(`${data.error}\n${data.details.map(({ code }) => code)}`);
+      if (data.error) {
+        throw new Error(`${data.error}\n${data.details.map(({ code }) => code)}`);
+      }
+
+      if (data.success) {
+        window.alert("收穫 SLP 成功");
+        window.location.reload();
+      }
+    } catch (err) {
+      window.alert(`收穫 SLP 失敗\n${err}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (data.success) {
-      window.alert("claim SLP success");
-      window.location.reload();
-    }
-
-    setIsLoading(false);
-    console.log(data);
   }, []);
 
   const handleTransfer = useCallback(
@@ -116,16 +114,21 @@ function ModeClaim() {
       if (toAddress === "" || fromAddress === "" || privateKey === "") return;
       setIsLoading(true);
 
-      const data = await transferSlp({
-        fromAddress,
-        toAddress,
-        privateKey,
-      });
-      if (data.transactionHash) {
-        window.alert("transaction success");
-        window.location.reload();
+      try {
+        const data = await transferSlp({
+          fromAddress,
+          toAddress,
+          privateKey,
+        });
+        if (data.transactionHash) {
+          window.alert("轉帳成功");
+          window.location.reload();
+        }
+      } catch (err) {
+        window.alert(`轉帳失敗\n${err}`);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     },
     [accounts]
   );

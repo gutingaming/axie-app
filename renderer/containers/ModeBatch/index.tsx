@@ -43,7 +43,7 @@ function ModeBatch() {
                   className="py-2 pl-3 pr-10 bg-transparent border border-gray-700 rounded appearance-none focus:ring-2 focus:ring-indigo-900 focus:outline-none focus:border-indigo-500"
                 >
                   {accounts.map(({ name, is_main_account, ronin_address }) => (
-                    <option value={ronin_address} selected={is_main_account}>
+                    <option key={ronin_address} value={ronin_address} selected={is_main_account}>
                       {name}
                     </option>
                   ))}
