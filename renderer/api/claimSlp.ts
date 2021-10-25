@@ -4,6 +4,7 @@ const claimSlp = async ({
   address,
   accessToken,
 }: Payload): Promise<{
+  success?: boolean;
   error?: string;
   details?: { code: string }[];
 }> => {
