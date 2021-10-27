@@ -1,5 +1,8 @@
 import React, { useCallback, useState } from "react";
 
+import claimSlp from "../../api/claimSlp";
+import profile from "../../api/profile";
+import { transferAllSlp } from "../../api/transferSlp";
 import AddAxieAccountModal, {
   Payload,
 } from "../../components/AddAxieAccountModal";
@@ -8,13 +11,17 @@ import useAxieAccounts from "../../hooks/useAxieAccounts";
 import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
-import claimSlp from "../../api/claimSlp";
-import { transferAllSlp } from "../../api/transferSlp";
 
 function ModeClaim() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const { accounts, mainAccount, setAccounts, balances, forceUpdate } = useAxieAccounts();
+  const {
+    accounts,
+    mainAccount,
+    setAccounts,
+    balances,
+    forceUpdate,
+  } = useAxieAccounts();
 
   const {
     isModalOpen: isAddAxieAccountModalOpen,
@@ -24,21 +31,50 @@ function ModeClaim() {
 
   const handleAddAxieAccountModalSubmit = useCallback(
     async (payload: Payload) => {
+      let result = {
+        success: true,
+        error: "",
+      };
+
+      // find duplicated account
       const { name, ronin_address, private_key } = payload;
       const foundAccount = accounts.find(
         ({ ronin_address: roninAddress }) => roninAddress === ronin_address
       );
-      if (!foundAccount) {
-        const newAccounts = [].concat(accounts, {
-          is_main_account: accounts.length === 0,
-          name,
-          ronin_address,
-          private_key,
-        });
-        localStorage.axieAccounts = JSON.stringify(newAccounts);
-        setAccounts(newAccounts);
+      if (foundAccount) {
+        result.success = false;
+        result.error = "錢包位址已存在";
+        return result;
       }
-      return !!foundAccount ? false : true;
+
+      // find invalid private key
+      try {
+        const { data: randomMessage } = await randomMessageAPI();
+        const { data: accessToken } = await jwtAccessToken({
+          address: ronin_address,
+          privateKey: private_key,
+          randomMessage,
+        });
+        const data = await profile({ accessToken });
+        console.log(data);
+      } catch (err) {
+        console.log(err);
+        result.success = false;
+        result.error = "Ronin 錢包位址與私鑰不匹配";
+        return result;
+      }
+
+      // write into localstorage
+      const newAccounts = [].concat(accounts, {
+        is_main_account: accounts.length === 0,
+        name,
+        ronin_address,
+        private_key,
+      });
+      localStorage.axieAccounts = JSON.stringify(newAccounts);
+      setAccounts(newAccounts);
+
+      return result;
     },
     [accounts]
   );
@@ -89,7 +125,9 @@ function ModeClaim() {
       });
 
       if (data.error) {
-        throw new Error(`${data.error}\n${data.details.map(({ code }) => code)}`);
+        throw new Error(
+          `${data.error}\n${data.details.map(({ code }) => code)}`
+        );
       }
 
       if (data.success) {
@@ -157,6 +195,14 @@ function ModeClaim() {
               新增錢包
             </button>
           </div>
+          <div className="float-left mb-6 ml-3">
+            <button
+              onClick={() => forceUpdate()}
+              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+            >
+              刷新資料
+            </button>
+          </div>
           <div className="flex-1 text-gray-400 bg-gray-900 body-font">
             <table className="w-full text-left whitespace-no-wrap table-auto">
               <thead>
@@ -183,7 +229,10 @@ function ModeClaim() {
                         {name} {is_main_account ? "[主]" : ""}
                       </td>
                       <td className="px-4 py-3">
-                        <div title={ronin_address} className="w-32 overflow-hidden overflow-ellipsis">
+                        <div
+                          title={ronin_address}
+                          className="w-32 overflow-hidden overflow-ellipsis"
+                        >
                           {ronin_address}
                         </div>
                       </td>

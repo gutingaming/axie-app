@@ -56,6 +56,12 @@ function ModeBatch() {
     setSelectedRoninAddress(e.target.value);
   }, []);
   const handleConfirmTransfer = useCallback(() => {
+    const totalOutputSlp = Object.values(toAccounts).reduce((result, { balance }) => result += Number(balance), 0);
+    if (totalOutputSlp > balances[selectedRoninAddress]) {
+      window.alert("餘額不足，無法進行轉帳。");
+      return;
+    }
+
     if (confirm("確認轉出資訊無誤，執行批次轉帳？")) {
       const seqPromises = (promises) => {
         return promises.reduce((prev, promise) => {
@@ -124,6 +130,8 @@ function ModeBatch() {
     reader.readAsText(file);
   }, []);
 
+  const isConfirmButtonDisabled = Object.keys(toAccounts).length <= 0 || isExecuting;
+
   return (
     <>
       <div className="p-5">
@@ -180,16 +188,22 @@ function ModeBatch() {
               hidden
             />
           </div>
+          <div className="float-left mb-6">
+            <p className="w-full text-sm text-gray-500 leading-8">
+              提醒：點擊轉帳成功連結並不會馬上看到交易明細，需稍待 30 秒至
+              1 分鐘。
+            </p>
+          </div>
           <div className="float-right mb-6">
             <button
               onClick={handleConfirmTransfer}
               className={cx(
                 "inline-flex items-center float-right px-3 py-1 text-base bg-indigo-500 border-0 rounded focus:outline-none md:mt-0",
-                isExecuting
+                isConfirmButtonDisabled
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:bg-indigo-600"
               )}
-              disabled={isExecuting}
+              disabled={isConfirmButtonDisabled}
             >
               確認轉帳
             </button>
@@ -221,13 +235,19 @@ function ModeBatch() {
                   <tr key={ronin_address}>
                     <td className="px-4 py-3">{id + 1}</td>
                     <td className="px-4 py-3">
-                      <div title={selectedRoninAddress} className="w-32 overflow-hidden overflow-ellipsis">
+                      <div
+                        title={selectedRoninAddress}
+                        className="w-32 overflow-hidden overflow-ellipsis"
+                      >
                         {selectedRoninAddress}
                       </div>
                     </td>
                     <td className="px-4 py-3">{balance}</td>
                     <td className="px-4 py-3">
-                      <div title={ronin_address} className="w-32 overflow-hidden overflow-ellipsis">
+                      <div
+                        title={ronin_address}
+                        className="w-32 overflow-hidden overflow-ellipsis"
+                      >
                         {ronin_address}
                       </div>
                     </td>
@@ -239,12 +259,17 @@ function ModeBatch() {
                           rel="noreferrer noopener"
                           className="text-indigo-400 hover:text-indigo-500"
                         >
-                          成功
+                          轉帳成功
                         </a>
                       ) : (
                         ""
                       )}
                       {errors[ronin_address] ? errors[ronin_address] : ""}
+                      {isExecuting &&
+                      !transactions[ronin_address] &&
+                      !errors[ronin_address]
+                        ? "執行中..."
+                        : ""}
                     </td>
                   </tr>
                 );

@@ -11,13 +11,18 @@ export type Payload = {
 
 interface Props {
   isModalOpen: boolean;
-  onSubmit: (payload: Payload) => Promise<boolean>;
+  onSubmit: (
+    payload: Payload
+  ) => Promise<{
+    success: boolean;
+    error: string;
+  }>;
   onClose: () => void;
 }
 
 const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
   const modalRef = useRef<ModalRef>(null);
-  const [isFormError, setIsFormError] = useState(false);
+  const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
   const [roninAddress, setRoninAddress] = useState("");
@@ -34,18 +39,20 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     if (name === "" || roninAddress === "" || privateKey === "") {
-      setIsFormError(true);
+      setFormError("欄位皆為必填");
       setIsSubmitting(false);
       return;
     }
-    setIsFormError(false);
-    const success = await onSubmit({
+    setFormError("");
+    const { success, error } = await onSubmit({
       name,
       ronin_address: roninAddress,
       private_key: privateKey,
     });
     if (success) {
       modalRef.current?.close();
+    } else {
+      setFormError(error);
     }
     setIsSubmitting(false);
   }, [onSubmit, name, roninAddress, privateKey]);
@@ -138,10 +145,8 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
           </p>
         </div>
       </div>
-      {isFormError && (
-        <div className="mt-3 text-sm text-center text-red-700">
-          請正確填寫所有欄位
-        </div>
+      {!!formError && (
+        <div className="mb-3 text-sm text-center text-red-700">{formError}</div>
       )}
       <button
         className={classNames(

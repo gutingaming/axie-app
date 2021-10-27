@@ -1,11 +1,12 @@
-import { NextApiRequest, NextApiResponse } from "next";
+type Payload = { accessToken: string };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { accessToken } = req.body;
-
+const profile = async ({
+  accessToken,
+}: Payload): Promise<{
+  success?: boolean;
+  error?: string;
+  details?: { code: string }[];
+}> => {
   const body = {
     operationName: "GetProfileBrief",
     variables: {},
@@ -25,11 +26,9 @@ export default async function handler(
       },
     }
   );
-  const {
-    data: { profile },
-  } = await fetchRes.json();
+  const { data } = await fetchRes.json();
 
-  res.status(200).json({
-    data: profile,
-  });
-}
+  return data.profile;
+};
+
+export default profile;
