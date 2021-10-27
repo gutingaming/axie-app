@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "classnames": "^2.3.1",
+    "csvtojson": "^2.0.10",
     "electron-serve": "^1.1.0",
     "electron-store": "^8.0.0",
     "ethereumjs-tx": "^2.1.2",
