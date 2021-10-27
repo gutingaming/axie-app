@@ -1,8 +1,28 @@
 import RoninChain from "../utils/RoninChain";
 
-type Payload = { fromAddress: string; toAddress: string; privateKey: string };
+type TransferSlpPayload = { fromAddress: string; toAddress: string; privateKey: string; balance: number; };
 
-const transferSlp = async ({ fromAddress, toAddress, privateKey }: Payload): Promise<{
+const transferSlp = async ({ fromAddress, toAddress, privateKey, balance }: TransferSlpPayload): Promise<{
+  from: string;
+  to: string;
+  transactionHash?: string;
+}> => {
+  const from_address = fromAddress.replace(/ronin:/gi, "0x");
+  const to_address = toAddress.replace(/ronin:/gi, "0x");
+
+  const receipt = await RoninChain.transferSlp(
+    from_address,
+    to_address,
+    balance,
+    privateKey
+  );
+
+  return receipt;
+};
+
+type TransferAllSlpPayload = { fromAddress: string; toAddress: string; privateKey: string };
+
+const transferAllSlp = async ({ fromAddress, toAddress, privateKey }: TransferAllSlpPayload): Promise<{
   transactionHash?: string;
 }> => {
   const from_address = fromAddress.replace(/ronin:/gi, "0x");
@@ -19,4 +39,7 @@ const transferSlp = async ({ fromAddress, toAddress, privateKey }: Payload): Pro
   return receipt;
 };
 
-export default transferSlp;
+export {
+  transferSlp,
+  transferAllSlp,
+};

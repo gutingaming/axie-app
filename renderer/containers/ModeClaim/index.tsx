@@ -9,7 +9,7 @@ import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
 import claimSlp from "../../api/claimSlp";
-import transferSlp from "../../api/transferSlp";
+import { transferAllSlp } from "../../api/transferSlp";
 
 function ModeClaim() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -115,7 +115,7 @@ function ModeClaim() {
       setIsLoading(true);
 
       try {
-        const data = await transferSlp({
+        const data = await transferAllSlp({
           fromAddress,
           toAddress,
           privateKey,
@@ -183,7 +183,7 @@ function ModeClaim() {
                         {name} {is_main_account ? "[主]" : ""}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="w-32 overflow-hidden overflow-ellipsis">
+                        <div title={ronin_address} className="w-32 overflow-hidden overflow-ellipsis">
                           {ronin_address}
                         </div>
                       </td>
