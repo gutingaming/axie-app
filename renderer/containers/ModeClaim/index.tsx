@@ -14,7 +14,7 @@ import transferSlp from "../../api/transferSlp";
 function ModeClaim() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const { accounts, mainAccount, setAccounts, balances } = useAxieAccounts();
+  const { accounts, mainAccount, setAccounts, balances, forceUpdate } = useAxieAccounts();
 
   const {
     isModalOpen: isAddAxieAccountModalOpen,
@@ -94,7 +94,7 @@ function ModeClaim() {
 
       if (data.success) {
         window.alert("收穫 SLP 成功");
-        window.location.reload();
+        forceUpdate();
       }
     } catch (err) {
       window.alert(`收穫 SLP 失敗\n${err}`);
@@ -122,7 +122,7 @@ function ModeClaim() {
         });
         if (data.transactionHash) {
           window.alert("轉帳成功");
-          window.location.reload();
+          forceUpdate();
         }
       } catch (err) {
         window.alert(`轉帳失敗\n${err}`);

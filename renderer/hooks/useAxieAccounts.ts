@@ -14,12 +14,15 @@ function useAxieAccounts(): {
   mainAccount: AxieAccount;
   setAccounts: Dispatch<SetStateAction<AxieAccount[]>>;
   balances: { [key: string]: number };
+  forceUpdate: () => void;
 } {
   const [accounts, setAccounts] = useState<AxieAccount[]>(
     JSON.parse(localStorage?.axieAccounts || "[]")
   );
+  const [dummy, setDummy] = useState(0);
   const [balances, setBalances] = useState<{ [key: string]: number }>({});
 
+  const forceUpdate = () => { setDummy(dummy + 1) };
   const mainAccount = accounts.find(({ is_main_account }) => is_main_account);
 
   useEffect(() => {
@@ -31,13 +34,14 @@ function useAxieAccounts(): {
       );
       setBalances(results.reduce((r, v) => Object.assign(r, v), {}));
     })();
-  }, [accounts]);
+  }, [accounts, dummy]);
 
   return {
     accounts,
     mainAccount,
     setAccounts,
     balances,
+    forceUpdate,
   };
 }
 
