@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
+import csvToJson from "csvtojson";
 
 import claimSlp from "../../api/claimSlp";
 import profile from "../../api/profile";
@@ -13,6 +14,7 @@ import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
 
 function ModeClaim() {
+  const csvInput = useRef(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const {
@@ -170,121 +172,157 @@ function ModeClaim() {
     },
     [accounts]
   );
+
+  const handleCsvImportClick = useCallback(() => {
+    csvInput.current.value = "";
+    localStorage.axieAccounts = JSON.stringify([]);
+    setAccounts([]);
+    csvInput.current.click();
+  }, [setAccounts]);
+  const handleCsvImport = useCallback(
+    (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const result = event.target.result.toString();
+        csvToJson({ noheader: true })
+          .fromString(result)
+          .then((json) => {
+            const newAccounts = json.reduce(
+              (result, { field1, field2, field3 }, index) => {
+                result.push({
+                  name: field1,
+                  ronin_address: field2,
+                  private_key: field3,
+                  is_main_account: index === 0 ? true : false,
+                });
+                return result;
+              },
+              [].concat(accounts)
+            );
+            localStorage.axieAccounts = JSON.stringify(newAccounts);
+            setAccounts(newAccounts);
+          });
+      };
+      reader.readAsText(file);
+    },
+    [accounts]
+  );
   return (
     <>
-      {accounts.length === 0 && (
-        <div className="flex flex-col items-center justify-center w-screen h-screen">
-          <p className="w-full mb-5 leading-relaxed text-center text-gray-400 lg:w-1/2 text-opacity-90">
-            你需要一個 Ronin 錢包
-          </p>
+      <div className="p-5">
+        <div className="float-left mb-6">
           <button
-            onClick={() => openAddAxieAccountModal()}
-            className="inline-flex items-center float-right px-4 py-2 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+            onClick={openAddAxieAccountModal}
+            className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
           >
-            新增
+            新增錢包
           </button>
         </div>
-      )}
-      {accounts.length > 0 && (
-        <div className="p-5">
-          <div className="float-left mb-6">
-            <button
-              onClick={() => openAddAxieAccountModal()}
-              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
-            >
-              新增錢包
-            </button>
-          </div>
-          <div className="float-left mb-6 ml-3">
-            <button
-              onClick={() => forceUpdate()}
-              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
-            >
-              刷新資料
-            </button>
-          </div>
-          <div className="flex-1 text-gray-400 bg-gray-900 body-font">
-            <table className="w-full text-left whitespace-no-wrap table-auto">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tl rounded-bl title-font">
-                    名稱
-                  </th>
-                  <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                    Ronin 錢包地址
-                  </th>
-                  <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                    持有 SLP
-                  </th>
-                  <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tr rounded-br title-font">
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.map(
-                  ({ is_main_account, name, ronin_address, private_key }) => (
-                    <tr key={ronin_address}>
-                      <td className="px-4 py-3">
-                        {name} {is_main_account ? "[主]" : ""}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div
-                          title={ronin_address}
-                          className="w-32 overflow-hidden overflow-ellipsis"
-                        >
-                          {ronin_address}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">{balances[ronin_address]}</td>
-                      <td className="px-4 py-3">
-                        <a
-                          onClick={() =>
-                            handleClaimSlp({ ronin_address, private_key })
-                          }
-                          className="mr-5 cursor-pointer hover:text-white"
-                        >
-                          收穫SLP
-                        </a>
-                        {!is_main_account && (
-                          <a
-                            onClick={() =>
-                              handleTransfer({
-                                ronin_address,
-                                private_key,
-                                main_account: mainAccount.ronin_address,
-                              })
-                            }
-                            className="mr-5 cursor-pointer hover:text-white"
-                          >
-                            轉帳至主錢包
-                          </a>
-                        )}
-                        {!is_main_account && (
-                          <a
-                            onClick={() => handleSetMainAccount(ronin_address)}
-                            className="mr-5 cursor-pointer hover:text-white"
-                          >
-                            設為主錢包
-                          </a>
-                        )}
-                        <a
-                          onClick={() =>
-                            handleAxieAccountDelete({ name, ronin_address })
-                          }
-                          className="mr-5 cursor-pointer hover:text-white"
-                        >
-                          刪除
-                        </a>
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="float-left mb-6 ml-3">
+          <button
+            onClick={handleCsvImportClick}
+            className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+          >
+            匯入CSV
+          </button>
+          <input
+            ref={csvInput}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvImport}
+            hidden
+          />
         </div>
-      )}
+        <div className="float-left mb-6 ml-3">
+          <button
+            onClick={forceUpdate}
+            className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+          >
+            刷新資料
+          </button>
+        </div>
+        <div className="flex-1 text-gray-400 bg-gray-900 body-font">
+          <table className="w-full text-left whitespace-no-wrap table-auto">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tl rounded-bl title-font">
+                  名稱
+                </th>
+                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
+                  Ronin 錢包地址
+                </th>
+                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
+                  持有 SLP
+                </th>
+                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tr rounded-br title-font">
+                  操作
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map(
+                ({ is_main_account, name, ronin_address, private_key }) => (
+                  <tr key={ronin_address}>
+                    <td className="px-4 py-3">
+                      {name} {is_main_account ? "[主]" : ""}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div
+                        title={ronin_address}
+                        className="w-32 overflow-hidden overflow-ellipsis"
+                      >
+                        {ronin_address}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">{balances[ronin_address]}</td>
+                    <td className="px-4 py-3">
+                      <a
+                        onClick={() =>
+                          handleClaimSlp({ ronin_address, private_key })
+                        }
+                        className="mr-5 cursor-pointer hover:text-white"
+                      >
+                        收穫SLP
+                      </a>
+                      {!is_main_account && (
+                        <a
+                          onClick={() =>
+                            handleTransfer({
+                              ronin_address,
+                              private_key,
+                              main_account: mainAccount.ronin_address,
+                            })
+                          }
+                          className="mr-5 cursor-pointer hover:text-white"
+                        >
+                          轉帳至主錢包
+                        </a>
+                      )}
+                      {!is_main_account && (
+                        <a
+                          onClick={() => handleSetMainAccount(ronin_address)}
+                          className="mr-5 cursor-pointer hover:text-white"
+                        >
+                          設為主錢包
+                        </a>
+                      )}
+                      <a
+                        onClick={() =>
+                          handleAxieAccountDelete({ name, ronin_address })
+                        }
+                        className="mr-5 cursor-pointer hover:text-white"
+                      >
+                        刪除
+                      </a>
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
       <AddAxieAccountModal
         isModalOpen={isAddAxieAccountModalOpen}
         onSubmit={handleAddAxieAccountModalSubmit}

@@ -14,6 +14,16 @@ type ToAccount = {
 function ModeBatch() {
   const csvInput = useRef(null);
   const { accounts, mainAccount, balances } = useAxieAccounts();
+
+  if (accounts.length === 0)
+    return (
+      <div className="flex flex-col items-center justify-center w-screen mt-48">
+        <p className="w-full mb-5 leading-relaxed text-center text-gray-400 lg:w-1/2 text-opacity-90">
+          你需要一個 Ronin 錢包
+        </p>
+      </div>
+    );
+
   const [selectedRoninAddress, setSelectedRoninAddress] = useState(
     mainAccount.ronin_address
   );
@@ -56,7 +66,10 @@ function ModeBatch() {
     setSelectedRoninAddress(e.target.value);
   }, []);
   const handleConfirmTransfer = useCallback(() => {
-    const totalOutputSlp = Object.values(toAccounts).reduce((result, { balance }) => result += Number(balance), 0);
+    const totalOutputSlp = Object.values(toAccounts).reduce(
+      (result, { balance }) => (result += Number(balance)),
+      0
+    );
     if (totalOutputSlp > balances[selectedRoninAddress]) {
       window.alert("餘額不足，無法進行轉帳。");
       return;
@@ -100,9 +113,9 @@ function ModeBatch() {
   }, [accounts, mainAccount, toAccounts, changeError, changeTransaction]);
   const handleCsvImportClick = useCallback(() => {
     csvInput.current.value = "";
-    localStorage.toAccounts = JSON.stringify("{}");
-    localStorage.errors = JSON.stringify("{}");
-    localStorage.transactions = JSON.stringify("{}");
+    localStorage.toAccounts = JSON.stringify({});
+    localStorage.errors = JSON.stringify({});
+    localStorage.transactions = JSON.stringify({});
     setToAccounts({});
     setErrors({});
     setTransactions({});
@@ -130,7 +143,8 @@ function ModeBatch() {
     reader.readAsText(file);
   }, []);
 
-  const isConfirmButtonDisabled = Object.keys(toAccounts).length <= 0 || isExecuting;
+  const isConfirmButtonDisabled =
+    Object.keys(toAccounts).length <= 0 || isExecuting;
 
   return (
     <>
@@ -190,8 +204,8 @@ function ModeBatch() {
           </div>
           <div className="float-left mb-6">
             <p className="w-full text-sm text-gray-500 leading-8">
-              提醒：點擊轉帳成功連結並不會馬上看到交易明細，需稍待 30 秒至
-              1 分鐘。
+              提醒：點擊轉帳成功連結並不會馬上看到交易明細，需稍待 30 秒至 1
+              分鐘。
             </p>
           </div>
           <div className="float-right mb-6">
