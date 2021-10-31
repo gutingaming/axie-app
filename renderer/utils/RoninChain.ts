@@ -37,6 +37,7 @@ export default class RoninChain {
     from: string,
     to: string,
     privateKey: string,
+    gas: number,
     transaction
   ) => {
     try {
@@ -45,7 +46,7 @@ export default class RoninChain {
           chainId: CHAIN_ID,
           data: transaction.encodeABI(),
           from: this._transformToEthWallet(from),
-          gas: 100000,
+          gas,
           gasPrice: 0,
           nonce: await this._getTransactionCount(from),
           to: this._transformToEthWallet(to),
@@ -90,6 +91,7 @@ export default class RoninChain {
         ethFrom,
         SLP_CONTRACT,
         privateKey,
+        100000,
         transaction
       );
       console.info("RoninChain.transferSlp.completed", {
@@ -105,6 +107,49 @@ export default class RoninChain {
         to,
         amount,
         error,
+      });
+      throw error;
+    }
+  };
+
+  static checkpoint = async (
+    ronin_address: string,
+    private_key: string,
+    amount: number,
+    timestamp: number,
+    signature: string
+  ) => {
+    try {
+      if (amount <= 0 || !Number.isInteger(amount)) {
+        throw new Error("RoninChain.claimSlp.error.invalidAmount");
+      }
+
+    const ethAddress = this._transformToEthWallet(ronin_address);
+
+      const transaction = slpContract.methods.checkpoint(
+        ethAddress,
+        amount,
+        timestamp,
+        signature
+      );
+
+      const transactionHash = await RoninChain._signAndSendTransaction(
+        ethAddress,
+        SLP_CONTRACT,
+        private_key,
+        1000000,
+        transaction
+      );
+      console.info("RoninChain.claimSlp.completed", {
+        ronin_address,
+        amount,
+        transactionHash,
+      });
+      return { transactionHash, ethAddress, amount };
+    } catch (error) {
+      console.error("RoninChain.claimSlp.error", {
+        ronin_address,
+        amount,
       });
       throw error;
     }

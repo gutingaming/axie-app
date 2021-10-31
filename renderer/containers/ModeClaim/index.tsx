@@ -12,6 +12,7 @@ import useAxieAccounts from "../../hooks/useAxieAccounts";
 import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
+import RoninChain from "../../utils/RoninChain";
 
 function ModeClaim() {
   const csvInput = useRef(null);
@@ -121,21 +122,32 @@ function ModeClaim() {
     });
 
     try {
-      const data = await claimSlp({
+      const {
+        success,
+        blockchain_related: {
+          signature: { amount, signature, timestamp },
+        },
+        error,
+        details,
+      } = await claimSlp({
         address,
         accessToken,
       });
 
-      if (data.error) {
-        throw new Error(
-          `${data.error}\n${data.details.map(({ code }) => code)}`
-        );
+      if (!success || error) {
+        throw new Error(`${error}\n${details.map(({ code }) => code)}`);
       }
 
-      if (data.success) {
-        window.alert("收穫 SLP 成功");
-        forceUpdate();
-      }
+      const result = await RoninChain.checkpoint(
+        address,
+        privateKey,
+        amount,
+        timestamp,
+        signature
+      );
+      console.log(result);
+      window.alert("收穫 SLP 成功");
+      forceUpdate();
     } catch (err) {
       window.alert(`收穫 SLP 失敗\n${err}`);
     } finally {
