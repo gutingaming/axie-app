@@ -8,8 +8,9 @@ const claimSlp = async ({
   error?: string;
   details?: { code: string }[];
 }> => {
+  const converted = address.replace(/ronin:/gi, "0x");
   const fetchRes = await fetch(
-    `https://game-api.skymavis.com/game-api/clients/${address}/items/1/claim`,
+    `https://game-api.skymavis.com/game-api/clients/${converted}/items/1/claim`,
     {
       headers: {
         "User-Agent":
