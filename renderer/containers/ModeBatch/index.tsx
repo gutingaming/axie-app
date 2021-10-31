@@ -127,7 +127,7 @@ function ModeBatch() {
     const reader = new FileReader();
     reader.onload = function (event) {
       const result = event.target.result.toString();
-      csvToJson({ noheader: true })
+      csvToJson({ noheader: true, ignoreEmpty: true })
         .fromString(result)
         .then((json) => {
           const newToAccounts = json.reduce((result, { field1, field2 }) => {

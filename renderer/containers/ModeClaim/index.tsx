@@ -185,7 +185,7 @@ function ModeClaim() {
       const reader = new FileReader();
       reader.onload = function (event) {
         const result = event.target.result.toString();
-        csvToJson({ noheader: true })
+        csvToJson({ noheader: true, ignoreEmpty: true })
           .fromString(result)
           .then((json) => {
             const newAccounts = json.reduce(
