@@ -13,6 +13,7 @@ import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
 import RoninChain from "../../utils/RoninChain";
+import {testPrivateKey, testRoninAddress} from "../../utils/validation";
 
 function ModeClaim() {
   const csvInput = useRef(null);
@@ -202,6 +203,10 @@ function ModeClaim() {
           .then((json) => {
             const newAccounts = json.reduce(
               (result, { field1, field2, field3 }, index) => {
+                if (!testRoninAddress(field2) || !testPrivateKey(field3)) {
+                  console.log(`${field1} is not a valid wallet`);
+                  return result;
+                }
                 result.push({
                   name: field1,
                   ronin_address: field2,
