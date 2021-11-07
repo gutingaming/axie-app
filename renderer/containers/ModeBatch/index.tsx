@@ -1,5 +1,4 @@
 import React, { useCallback, useRef, useState } from "react";
-import cx from "classnames";
 import csvToJson from "csvtojson";
 
 import useAxieAccounts from "../../hooks/useAxieAccounts";
@@ -39,7 +38,6 @@ function ModeBatch() {
   const [toAccounts, setToAccounts] = useState<ToAccount>(
     JSON.parse(localStorage?.toAccounts || "{}")
   );
-  const [isAllExecuting, setIsAllExecuting] = useState<boolean>(false);
   const [executing, setExecuting] = useState<{ [key: string]: boolean }>({});
 
   const changeTransaction = useCallback(
@@ -69,62 +67,6 @@ function ModeBatch() {
   const handleAccountChange = useCallback((e) => {
     setSelectedRoninAddress(e.target.value);
   }, []);
-  const handleBatchTransfer = useCallback(() => {
-    const fromAddress = selectedRoninAddress;
-    const privateKey = selectedPrivateKey;
-    const totalOutputSlp = Object.values(toAccounts).reduce(
-      (result, { outputSlp }) => (result += Number(outputSlp)),
-      0
-    );
-    if (totalOutputSlp > balances[fromAddress]) {
-      window.alert("餘額不足，無法進行轉帳。");
-      return;
-    }
-
-    if (confirm("確認轉出資訊無誤，執行批次轉帳？")) {
-      const seqPromises = (promises) => {
-        return promises.reduce((prev, promise) => {
-          return prev.then(promise).catch((err) => {
-            console.warn("err", err.message);
-          });
-        }, Promise.resolve());
-      };
-
-      setIsAllExecuting(true);
-
-      seqPromises(
-        Object.keys(toAccounts).map((toAddress) =>
-          transferSlp({
-            fromAddress,
-            toAddress,
-            privateKey,
-            balance: Number(toAccounts[toAddress].outputSlp),
-          })
-            .then((data) => {
-              const { to: to_address, transactionHash } = data;
-              const toAddresss = to_address.replace("0x", "ronin:");
-              console.log(data);
-              if (transactionHash) {
-                changeTransaction(transactionHash, toAddresss);
-              }
-            })
-            .catch((err) => {
-              changeError(err, toAddress);
-            })
-            .finally(() => {
-              setIsAllExecuting(false);
-            })
-        )
-      );
-    }
-  }, [
-    balances,
-    selectedRoninAddress,
-    selectedPrivateKey,
-    toAccounts,
-    changeError,
-    changeTransaction,
-  ]);
   const handleSingleTransfer = useCallback(
     (outputSlp: number, toAddress: string) => {
       const fromAddress = selectedRoninAddress;
@@ -181,9 +123,8 @@ function ModeBatch() {
     setToAccounts({});
     setErrors({});
     setTransactions({});
-    setIsAllExecuting(false);
     csvInput.current.click();
-  }, [setIsAllExecuting, setTransactions, setErrors]);
+  }, [setTransactions, setErrors]);
   const handleCsvImport = useCallback((e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -204,9 +145,6 @@ function ModeBatch() {
     };
     reader.readAsText(file);
   }, []);
-
-  const isConfirmButtonDisabled =
-    Object.keys(toAccounts).length <= 0 || isAllExecuting;
 
   return (
     <>
@@ -266,23 +204,8 @@ function ModeBatch() {
           </div>
           <div className="float-left mb-6">
             <p className="w-full text-sm text-gray-500 leading-8">
-              提醒：開啟轉帳成功連結並不會馬上看到交易明細，需稍待 30 秒至 1
-              分鐘。
+              提醒：點擊轉帳成功並不會馬上看到交易明細，需稍待 30 秒至 1 分鐘。
             </p>
-          </div>
-          <div className="float-right mb-6">
-            <button
-              onClick={handleBatchTransfer}
-              className={cx(
-                "inline-flex items-center float-right px-3 py-1 text-base bg-indigo-600 border-0 rounded focus:outline-none md:mt-0",
-                isConfirmButtonDisabled
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-indigo-500"
-              )}
-              disabled={isConfirmButtonDisabled}
-            >
-              批次轉帳
-            </button>
           </div>
           <table className="w-full py-5 text-left text-gray-400 whitespace-no-wrap table-auto">
             <thead>
@@ -354,7 +277,7 @@ function ModeBatch() {
                         ""
                       )}
                       {errors[toAddress] ? errors[toAddress] : ""}
-                      {(!isAllExecuting && !executing[toAddress]) ||
+                      {!executing[toAddress] ||
                       transactions[toAddress] ||
                       errors[toAddress]
                         ? ""
