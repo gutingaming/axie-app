@@ -204,7 +204,7 @@ function ModeBatch() {
           </div>
           <div className="float-left mb-6">
             <p className="w-full text-sm text-gray-500 leading-8">
-              提醒：點擊轉帳成功連結並不會馬上看到交易明細，需稍待 30 秒至 1
+              提醒：開啟轉帳成功連結並不會馬上看到交易明細，需稍待 30 秒至 1
               分鐘。
             </p>
           </div>

@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import csvToJson from "csvtojson";
+import cx from "classnames";
 
 import claimSlp from "../../api/claimSlp";
 import profile from "../../api/profile";
@@ -13,7 +14,7 @@ import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
 import RoninChain from "../../utils/RoninChain";
-import {testPrivateKey, testRoninAddress} from "../../utils/validation";
+import { testPrivateKey, testRoninAddress } from "../../utils/validation";
 
 function ModeClaim() {
   const csvInput = useRef(null);
@@ -24,6 +25,7 @@ function ModeClaim() {
     mainAccount,
     setAccounts,
     balances,
+    claimableSlp,
     forceUpdate,
   } = useAxieAccounts();
 
@@ -201,6 +203,7 @@ function ModeClaim() {
         csvToJson({ noheader: true, ignoreEmpty: true })
           .fromString(result)
           .then((json) => {
+            let hasMainAccount = false;
             const newAccounts = json.reduce(
               (result, { field1, field2, field3 }, index) => {
                 if (!testRoninAddress(field2) || !testPrivateKey(field3)) {
@@ -211,8 +214,9 @@ function ModeClaim() {
                   name: field1,
                   ronin_address: field2,
                   private_key: field3,
-                  is_main_account: index === 0 ? true : false,
+                  is_main_account: !hasMainAccount,
                 });
+                hasMainAccount = true;
                 return result;
               },
               [].concat(accounts)
@@ -227,39 +231,44 @@ function ModeClaim() {
   );
   return (
     <>
-      <div className="p-5">
-        <div className="float-left mb-6">
-          <button
-            onClick={openAddAxieAccountModal}
-            className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
-          >
-            新增錢包
-          </button>
+      <div className="px-5 pt-5">
+        <div>
+          <div className="float-left mb-6">
+            <button
+              onClick={openAddAxieAccountModal}
+              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+            >
+              新增錢包
+            </button>
+          </div>
+          <div className="float-left mb-6 ml-3">
+            <button
+              onClick={handleCsvImportClick}
+              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+            >
+              匯入CSV
+            </button>
+            <input
+              ref={csvInput}
+              type="file"
+              accept=".csv"
+              onChange={handleCsvImport}
+              hidden
+            />
+          </div>
+          <div className="float-left mb-6 ml-3">
+            <button
+              onClick={forceUpdate}
+              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+            >
+              刷新資料
+            </button>
+          </div>
         </div>
-        <div className="float-left mb-6 ml-3">
-          <button
-            onClick={handleCsvImportClick}
-            className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
-          >
-            匯入CSV
-          </button>
-          <input
-            ref={csvInput}
-            type="file"
-            accept=".csv"
-            onChange={handleCsvImport}
-            hidden
-          />
-        </div>
-        <div className="float-left mb-6 ml-3">
-          <button
-            onClick={forceUpdate}
-            className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
-          >
-            刷新資料
-          </button>
-        </div>
-        <div className="flex-1 text-gray-400 bg-gray-900 body-font">
+        <div
+          className="flex-1 w-full overflow-hidden overflow-y-scroll text-gray-400 bg-gray-900 body-font"
+          style={{ height: "calc(100vh - 154px)" }}
+        >
           <table className="w-full text-left whitespace-no-wrap table-auto">
             <thead>
               <tr>
@@ -268,6 +277,9 @@ function ModeClaim() {
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
                   Ronin 錢包地址
+                </th>
+                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
+                  待收穫 SLP
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
                   持有 SLP
@@ -291,6 +303,16 @@ function ModeClaim() {
                       >
                         {ronin_address}
                       </div>
+                    </td>
+                    <td
+                      className={cx(
+                        "px-4 py-3",
+                        !claimableSlp[ronin_address]?.isClaimable
+                          ? "opacity-50"
+                          : ""
+                      )}
+                    >
+                      {claimableSlp[ronin_address]?.amount}
                     </td>
                     <td className="px-4 py-3">{balances[ronin_address]}</td>
                     <td className="px-4 py-3">
