@@ -7,7 +7,7 @@ import { transferSlp } from "../../api/transferSlp";
 
 type ToAccount = {
   [ronin_address: string]: {
-    balance: number;
+    outputSlp: number;
   };
 };
 
@@ -27,6 +27,9 @@ function ModeBatch() {
   const [selectedRoninAddress, setSelectedRoninAddress] = useState(
     mainAccount.ronin_address
   );
+  const selectedPrivateKey = accounts.find(
+    (account) => account.ronin_address === selectedRoninAddress
+  ).private_key;
   const [transactions, setTransactions] = useState<{ [key: string]: string }>(
     JSON.parse(localStorage?.transactions || "{}")
   );
@@ -36,7 +39,8 @@ function ModeBatch() {
   const [toAccounts, setToAccounts] = useState<ToAccount>(
     JSON.parse(localStorage?.toAccounts || "{}")
   );
-  const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [isAllExecuting, setIsAllExecuting] = useState<boolean>(false);
+  const [executing, setExecuting] = useState<{ [key: string]: boolean }>({});
 
   const changeTransaction = useCallback(
     (transaction_hash: string, ronin_address: string) => {
@@ -65,12 +69,14 @@ function ModeBatch() {
   const handleAccountChange = useCallback((e) => {
     setSelectedRoninAddress(e.target.value);
   }, []);
-  const handleConfirmTransfer = useCallback(() => {
+  const handleBatchTransfer = useCallback(() => {
+    const fromAddress = selectedRoninAddress;
+    const privateKey = selectedPrivateKey;
     const totalOutputSlp = Object.values(toAccounts).reduce(
-      (result, { balance }) => (result += Number(balance)),
+      (result, { outputSlp }) => (result += Number(outputSlp)),
       0
     );
-    if (totalOutputSlp > balances[selectedRoninAddress]) {
+    if (totalOutputSlp > balances[fromAddress]) {
       window.alert("餘額不足，無法進行轉帳。");
       return;
     }
@@ -84,17 +90,15 @@ function ModeBatch() {
         }, Promise.resolve());
       };
 
-      setIsExecuting(true);
+      setIsAllExecuting(true);
 
       seqPromises(
-        Object.keys(toAccounts).map((ronin_address) =>
+        Object.keys(toAccounts).map((toAddress) =>
           transferSlp({
-            fromAddress: selectedRoninAddress,
-            toAddress: ronin_address,
-            privateKey: accounts.find(
-              (account) => account.ronin_address === selectedRoninAddress
-            ).private_key,
-            balance: Number(toAccounts[ronin_address].balance),
+            fromAddress,
+            toAddress,
+            privateKey,
+            balance: Number(toAccounts[toAddress].outputSlp),
           })
             .then((data) => {
               const { to: to_address, transactionHash } = data;
@@ -105,12 +109,70 @@ function ModeBatch() {
               }
             })
             .catch((err) => {
-              changeError(err, ronin_address);
+              changeError(err, toAddress);
+            })
+            .finally(() => {
+              setIsAllExecuting(false);
             })
         )
       );
     }
-  }, [accounts, mainAccount, toAccounts, changeError, changeTransaction]);
+  }, [
+    balances,
+    selectedRoninAddress,
+    selectedPrivateKey,
+    toAccounts,
+    changeError,
+    changeTransaction,
+  ]);
+  const handleSingleTransfer = useCallback(
+    (outputSlp: number, toAddress: string) => {
+      const fromAddress = selectedRoninAddress;
+      const privateKey = selectedPrivateKey;
+      if (outputSlp > balances[fromAddress]) {
+        window.alert("餘額不足，無法進行轉帳。");
+        return;
+      }
+
+      if (confirm("確認轉出資訊無誤，執行單筆轉帳？")) {
+        setExecuting({
+          ...executing,
+          [toAddress]: true,
+        });
+        transferSlp({
+          fromAddress,
+          toAddress,
+          privateKey,
+          balance: Number(toAccounts[toAddress].outputSlp),
+        })
+          .then((data) => {
+            const { to: roninAddress, transactionHash } = data;
+            const ethAddresss = roninAddress.replace("0x", "ronin:");
+            console.log(data);
+            if (transactionHash) {
+              changeTransaction(transactionHash, ethAddresss);
+            }
+          })
+          .catch((err) => {
+            changeError(err, toAddress);
+          })
+          .finally(() => {
+            setExecuting({
+              ...executing,
+              [toAddress]: false,
+            });
+          });
+      }
+    },
+    [
+      balances,
+      selectedRoninAddress,
+      selectedPrivateKey,
+      toAccounts,
+      changeError,
+      changeTransaction,
+    ]
+  );
   const handleCsvImportClick = useCallback(() => {
     csvInput.current.value = "";
     localStorage.toAccounts = JSON.stringify({});
@@ -119,9 +181,9 @@ function ModeBatch() {
     setToAccounts({});
     setErrors({});
     setTransactions({});
-    setIsExecuting(false);
+    setIsAllExecuting(false);
     csvInput.current.click();
-  }, [setIsExecuting, setTransactions, setErrors]);
+  }, [setIsAllExecuting, setTransactions, setErrors]);
   const handleCsvImport = useCallback((e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -132,7 +194,7 @@ function ModeBatch() {
         .then((json) => {
           const newToAccounts = json.reduce((result, { field1, field2 }) => {
             result[field2] = {
-              balance: field1 as number,
+              outputSlp: field1 as number,
             };
             return result;
           }, {});
@@ -144,7 +206,7 @@ function ModeBatch() {
   }, []);
 
   const isConfirmButtonDisabled =
-    Object.keys(toAccounts).length <= 0 || isExecuting;
+    Object.keys(toAccounts).length <= 0 || isAllExecuting;
 
   return (
     <>
@@ -210,16 +272,16 @@ function ModeBatch() {
           </div>
           <div className="float-right mb-6">
             <button
-              onClick={handleConfirmTransfer}
+              onClick={handleBatchTransfer}
               className={cx(
-                "inline-flex items-center float-right px-3 py-1 text-base bg-indigo-500 border-0 rounded focus:outline-none md:mt-0",
+                "inline-flex items-center float-right px-3 py-1 text-base bg-indigo-600 border-0 rounded focus:outline-none md:mt-0",
                 isConfirmButtonDisabled
                   ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-indigo-600"
+                  : "hover:bg-indigo-500"
               )}
               disabled={isConfirmButtonDisabled}
             >
-              確認轉帳
+              批次轉帳
             </button>
           </div>
           <table className="w-full py-5 text-left text-gray-400 whitespace-no-wrap table-auto">
@@ -237,16 +299,19 @@ function ModeBatch() {
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
                   轉入錢包地址
                 </th>
+                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
+                  操作
+                </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tr rounded-br title-font">
                   執行結果
                 </th>
               </tr>
             </thead>
             <tbody>
-              {Object.keys(toAccounts).map((ronin_address, id) => {
-                const { balance } = toAccounts[ronin_address];
+              {Object.keys(toAccounts).map((toAddress, id) => {
+                const { outputSlp } = toAccounts[toAddress];
                 return (
-                  <tr key={ronin_address}>
+                  <tr key={toAddress}>
                     <td className="px-4 py-3">{id + 1}</td>
                     <td className="px-4 py-3">
                       <div
@@ -256,19 +321,29 @@ function ModeBatch() {
                         {selectedRoninAddress}
                       </div>
                     </td>
-                    <td className="px-4 py-3">{balance}</td>
+                    <td className="px-4 py-3">{outputSlp}</td>
                     <td className="px-4 py-3">
                       <div
-                        title={ronin_address}
+                        title={toAddress}
                         className="w-32 overflow-hidden overflow-ellipsis"
                       >
-                        {ronin_address}
+                        {toAddress}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {transactions[ronin_address] ? (
+                      <a
+                        onClick={() =>
+                          handleSingleTransfer(outputSlp, toAddress)
+                        }
+                        className="mr-5 cursor-pointer hover:text-white"
+                      >
+                        轉帳
+                      </a>
+                    </td>
+                    <td className="px-4 py-3">
+                      {transactions[toAddress] ? (
                         <a
-                          href={`https://explorer.roninchain.com/tx/${transactions[ronin_address]}`}
+                          href={`https://explorer.roninchain.com/tx/${transactions[toAddress]}`}
                           target="_blank"
                           rel="noreferrer noopener"
                           className="text-indigo-400 hover:text-indigo-500"
@@ -278,12 +353,12 @@ function ModeBatch() {
                       ) : (
                         ""
                       )}
-                      {errors[ronin_address] ? errors[ronin_address] : ""}
-                      {isExecuting &&
-                      !transactions[ronin_address] &&
-                      !errors[ronin_address]
-                        ? "執行中..."
-                        : ""}
+                      {errors[toAddress] ? errors[toAddress] : ""}
+                      {(!isAllExecuting && !executing[toAddress]) ||
+                      transactions[toAddress] ||
+                      errors[toAddress]
+                        ? ""
+                        : "執行中..."}
                     </td>
                   </tr>
                 );

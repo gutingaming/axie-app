@@ -266,7 +266,7 @@ function ModeClaim() {
           </div>
         </div>
         <div
-          className="flex-1 w-full overflow-hidden overflow-y-scroll text-gray-400 bg-gray-900 body-font"
+          className="flex-1 w-full overflow-hidden overflow-y-auto text-gray-400 bg-gray-900 body-font"
           style={{ height: "calc(100vh - 154px)" }}
         >
           <table className="w-full text-left whitespace-no-wrap table-auto">
@@ -279,7 +279,7 @@ function ModeClaim() {
                   Ronin 錢包地址
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  待收穫 SLP
+                  待收 SLP
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
                   持有 SLP
@@ -306,7 +306,7 @@ function ModeClaim() {
                     </td>
                     <td
                       className={cx(
-                        "px-4 py-3",
+                        "w-16 px-4 py-3",
                         !claimableSlp[ronin_address]?.isClaimable
                           ? "opacity-50"
                           : ""
@@ -314,7 +314,7 @@ function ModeClaim() {
                     >
                       {claimableSlp[ronin_address]?.amount}
                     </td>
-                    <td className="px-4 py-3">{balances[ronin_address]}</td>
+                    <td className="w-16 px-4 py-3">{balances[ronin_address]}</td>
                     <td className="px-4 py-3">
                       <a
                         onClick={() =>
