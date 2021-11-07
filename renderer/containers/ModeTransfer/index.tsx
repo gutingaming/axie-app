@@ -10,7 +10,7 @@ type ToAccount = {
   };
 };
 
-function ModeBatch() {
+function ModeTransfer() {
   const csvInput = useRef(null);
   const { accounts, mainAccount, balances } = useAxieAccounts();
 
@@ -294,4 +294,4 @@ function ModeBatch() {
   );
 }
 
-export default ModeBatch;
+export default ModeTransfer;

@@ -3,11 +3,11 @@ import Head from "next/head";
 import cx from "classnames";
 
 import ModeClaim from "../containers/ModeClaim";
-import ModeBatch from "../containers/ModeBatch";
+import ModeTransfer from "../containers/ModeTransfer";
 
 enum MODE {
   CLAIM = "claim",
-  BATCH = "batch",
+  TRANSFER = "transfer",
 }
 
 function Home() {
@@ -38,19 +38,19 @@ function Home() {
         </a>
         <a
           className={cx(
-            mode === MODE.BATCH
+            mode === MODE.TRANSFER
               ? "text-white bg-gray-800 border-b-2 border-indigo-500 rounded-t"
               : "border-b-2 border-gray-800 cursor-pointer",
             "inline-flex items-center justify-center w-1/2 py-3 font-medium leading-none tracking-wider sm:px-6 sm:w-auto sm:justify-start title-font"
           )}
-          onClick={() => handleModeButtonClick(MODE.BATCH)}
+          onClick={() => handleModeButtonClick(MODE.TRANSFER)}
         >
-          批次轉帳
+          快速轉帳
         </a>
       </div>
       <div>
         {mode === MODE.CLAIM && <ModeClaim />}
-        {mode === MODE.BATCH && <ModeBatch />}
+        {mode === MODE.TRANSFER && <ModeTransfer />}
       </div>
     </React.Fragment>
   );
