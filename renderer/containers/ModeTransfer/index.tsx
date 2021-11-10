@@ -71,7 +71,7 @@ function ModeTransfer() {
     (outputSlp: number, toAddress: string) => {
       const fromAddress = selectedRoninAddress;
       const privateKey = selectedPrivateKey;
-      if (outputSlp > balances[fromAddress]) {
+      if (balances[fromAddress] === 0 || balances[fromAddress] < outputSlp) {
         window.alert("餘額不足，無法進行轉帳。");
         return;
       }
