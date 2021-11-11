@@ -2,7 +2,6 @@ import React, { useCallback, useRef, useState } from "react";
 import csvToJson from "csvtojson";
 import cx from "classnames";
 
-import claimSlp from "../../api/claimSlp";
 import profile from "../../api/profile";
 import { transferAllSlp } from "../../api/transferSlp";
 import AddAxieAccountModal, {
@@ -10,10 +9,10 @@ import AddAxieAccountModal, {
 } from "../../components/AddAxieAccountModal";
 import LoadingMask from "../../components/LoadingMask";
 import useAxieAccounts from "../../hooks/useAxieAccounts";
+import useClaimSlp from "../../hooks/useClaimSlp";
 import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
-import RoninChain from "../../utils/RoninChain";
 import { testPrivateKey, testRoninAddress } from "../../utils/validation";
 
 function ModeClaim() {
@@ -34,6 +33,8 @@ function ModeClaim() {
     open: openAddAxieAccountModal,
     close: closeAddAxieAccountModal,
   } = useModalHandlers();
+
+  const claimSlp = useClaimSlp();
 
   const handleAddAxieAccountModalSubmit = useCallback(
     async (payload: Payload) => {
@@ -111,48 +112,37 @@ function ModeClaim() {
   );
 
   const handleClaimSlp = useCallback(async (payload) => {
-    const { ronin_address: address, private_key: privateKey } = payload;
-
-    if (address === "" || privateKey === "") return;
-    setIsLoading(true);
-
-    const { data: randomMessage } = await randomMessageAPI();
-
-    const { data: accessToken } = await jwtAccessToken({
-      address,
-      privateKey,
-      randomMessage,
-    });
-
     try {
-      const {
-        success,
-        blockchain_related: {
-          signature: { amount, signature, timestamp },
-        },
-        error,
-        details,
-      } = await claimSlp({
-        address,
-        accessToken,
+      setIsLoading(true);
+      const result = await claimSlp({
+        roninAddress: payload.ronin_address,
+        privateKey: payload.private_key,
       });
-
-      if (!success || error) {
-        throw new Error(`${error}\n${details.map(({ code }) => code)}`);
-      }
-
-      const result = await RoninChain.checkpoint(
-        address,
-        privateKey,
-        amount,
-        timestamp,
-        signature
-      );
       console.log(result);
       window.alert("收穫 SLP 成功");
       forceUpdate();
     } catch (err) {
       window.alert(`收穫 SLP 失敗\n${err}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleClaimAllSlp = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const results = await Promise.all(
+        accounts.map(({ ronin_address, private_key }) =>
+          claimSlp({
+            roninAddress: ronin_address,
+            privateKey: private_key,
+          })
+        )
+      );
+      console.log(results);
+      window.alert("批量收穫 SLP 成功");
+    } catch (err) {
+      window.alert(`批量收穫 SLP 失敗\n${err}`);
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +195,7 @@ function ModeClaim() {
           .then((json) => {
             let hasMainAccount = false;
             const newAccounts = json.reduce(
-              (result, { field1, field2, field3 }, index) => {
+              (result, { field1, field2, field3 }) => {
                 if (!testRoninAddress(field2) || !testPrivateKey(field3)) {
                   console.log(`${field1} is not a valid wallet`);
                   return result;
@@ -264,6 +254,14 @@ function ModeClaim() {
               刷新資料
             </button>
           </div>
+          <div className="float-right mb-6 ml-3">
+            <button
+              onClick={handleClaimAllSlp}
+              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
+            >
+              批量收穫SLP
+            </button>
+          </div>
         </div>
         <div
           className="flex-1 w-full overflow-hidden overflow-y-auto text-gray-400 bg-gray-900 body-font"
@@ -314,7 +312,9 @@ function ModeClaim() {
                     >
                       {claimableSlp[ronin_address]?.amount}
                     </td>
-                    <td className="w-16 px-4 py-3">{balances[ronin_address]}</td>
+                    <td className="w-16 px-4 py-3">
+                      {balances[ronin_address]}
+                    </td>
                     <td className="px-4 py-3">
                       <a
                         onClick={() =>
