@@ -6,11 +6,11 @@ const claimSlp = async ({
 }: Payload): Promise<{
   success?: boolean;
   blockchain_related?: {
-    signature: {
+    signature: Nullable<{
       amount: number;
       signature: string;
       timestamp: number;
-    };
+    }>;
   };
   error?: string;
   details?: { code: string }[];
