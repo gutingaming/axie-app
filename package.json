@@ -1,6 +1,6 @@
 {
   "name": "axie-infinity-claim-tool",
-  "description": "Axie Infinity Claim Tool",
+  "description": "Provide axie account manager a fast and less complex way to claim and transfer SLP to scholar.",
   "version": "1.0.0",
   "main": "app/background.js",
   "scripts": {

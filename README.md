@@ -1,5 +1,7 @@
 # Axie App
 
+Provide axie account manager a fast and less complex way to claim and transfer SLP to scholar.
+
 <img width="979" alt="demo" src="https://user-images.githubusercontent.com/579145/141709984-5752793d-71e3-4ccf-b3f9-76f30e8f6db7.png">
 
 ## Usage
