@@ -12,7 +12,7 @@ type ToAccount = {
 
 function ModeTransfer() {
   const csvInput = useRef(null);
-  const { accounts, mainAccount, balances } = useAxieAccounts();
+  const { accounts, forceUpdate, mainAccount, balances } = useAxieAccounts();
 
   if (accounts.length === 0)
     return (
@@ -103,6 +103,7 @@ function ModeTransfer() {
               ...executing,
               [toAddress]: false,
             });
+            forceUpdate();
           });
       }
     },
