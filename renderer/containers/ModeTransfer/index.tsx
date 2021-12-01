@@ -4,7 +4,9 @@ import csvToJson from "csvtojson";
 import * as i18n from "../../constants/locale";
 import useAxieAccounts from "../../hooks/useAxieAccounts";
 import { LANG } from "../../hooks/useLang";
+import useModalHandlers from "../../hooks/useModalHandlers";
 import { transferSlp } from "../../api/transferSlp";
+import ImportTransactionCsvModal from "../../components/ImportTransactionCsvModal";
 
 type ToAccount = {
   [ronin_address: string]: {
@@ -42,6 +44,12 @@ function ModeTransfer({ lang }: { lang: LANG }) {
     JSON.parse(localStorage?.toAccounts || "{}")
   );
   const [executing, setExecuting] = useState<{ [key: string]: boolean }>({});
+
+  const {
+    isModalOpen: isImportTransactionModalOpen,
+    open: openImportTransactionModal,
+    close: closeImportTransactionModal,
+  } = useModalHandlers();
 
   const changeTransaction = useCallback(
     (transaction_hash: string, ronin_address: string) => {
@@ -111,6 +119,7 @@ function ModeTransfer({ lang }: { lang: LANG }) {
       }
     },
     [
+      lang,
       balances,
       selectedRoninAddress,
       selectedPrivateKey,
@@ -119,7 +128,7 @@ function ModeTransfer({ lang }: { lang: LANG }) {
       changeTransaction,
     ]
   );
-  const handleCsvImportClick = useCallback(() => {
+  const handleImportTransactionModalSubmit = useCallback(() => {
     csvInput.current.value = "";
     localStorage.toAccounts = JSON.stringify({});
     localStorage.errors = JSON.stringify({});
@@ -139,6 +148,9 @@ function ModeTransfer({ lang }: { lang: LANG }) {
         .then((json) => {
           const newToAccounts = json.reduce(
             (result, { field1, field2, field3 }) => {
+              if (Number.isNaN(Number(field2))) {
+                return result;
+              }
               result[field3] = {
                 name: field1 as string,
                 outputSlp: field2 as number,
@@ -147,12 +159,17 @@ function ModeTransfer({ lang }: { lang: LANG }) {
             },
             {}
           );
-          localStorage.toAccounts = JSON.stringify(newToAccounts);
-          setToAccounts(newToAccounts);
+          if (Object.keys(newToAccounts).length > 0) {
+            localStorage.toAccounts = JSON.stringify(newToAccounts);
+            setToAccounts(newToAccounts);
+            closeImportTransactionModal();
+          } else {
+            window.alert(i18n.invalidCsvFormatI18n[lang]);
+          }
         });
     };
     reader.readAsText(file);
-  }, []);
+  }, [lang]);
 
   return (
     <>
@@ -197,7 +214,7 @@ function ModeTransfer({ lang }: { lang: LANG }) {
         <div className="pt-5 mt-5 border-t-2 border-gray-800">
           <div className="float-left mb-6">
             <button
-              onClick={handleCsvImportClick}
+              onClick={openImportTransactionModal}
               className="inline-flex items-center float-right px-3 py-1 mr-3 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
               {i18n.importCsvI18n[lang]}
@@ -287,6 +304,12 @@ function ModeTransfer({ lang }: { lang: LANG }) {
           </table>
         </div>
       </div>
+      <ImportTransactionCsvModal
+        lang={lang}
+        isModalOpen={isImportTransactionModalOpen}
+        onSubmit={handleImportTransactionModalSubmit}
+        onClose={closeImportTransactionModal}
+      />
     </>
   );
 }

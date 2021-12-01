@@ -12,12 +12,12 @@ export const transferModeI18n = {
 
 export const redundantAxieAccountErrI18n = {
   [LANG.EN]: 'Redundant axie account',
-  [LANG.ZH_TW]: '錢包位址已存在',
+  [LANG.ZH_TW]: '錢包已存在',
 };
 
 export const invalidPrivateKeyErrI18n = {
   [LANG.EN]: 'Invalid private key and ronin wallet',
-  [LANG.ZH_TW]: 'Ronin 錢包位址與私鑰不匹配',
+  [LANG.ZH_TW]: 'Ronin 錢包與私鑰不匹配',
 };
 
 export const confirmAxieAccountDeleteI18n = {
@@ -88,7 +88,7 @@ export const nameI18n = {
 
 export const walletAddressI18n = {
   [LANG.EN]: 'Ronin Address',
-  [LANG.ZH_TW]: 'Ronin 錢包位址',
+  [LANG.ZH_TW]: 'Ronin 錢包地址',
 };
 
 export const unclaimedSlpI18n = {
@@ -199,4 +199,29 @@ export const submittingI18n = {
 export const submitI18n = {
   [LANG.EN]: 'Submit',
   [LANG.ZH_TW]: '送出',
+};
+
+export const browseFileI18n = {
+  [LANG.EN]: 'Browse file...',
+  [LANG.ZH_TW]: '瀏覽檔案...',
+};
+
+export const csvFormatI18n = {
+  [LANG.EN]: 'CSV format',
+  [LANG.ZH_TW]: 'CSV 格式',
+};
+
+export const invalidCsvFormatI18n = {
+  [LANG.EN]: 'Invalid CSV format',
+  [LANG.ZH_TW]: 'CSV 格式錯誤',
+};
+
+export const axieAccountCsvFormatI18n = {
+  [LANG.EN]: '{name},{ronin_address},{private_key}',
+  [LANG.ZH_TW]: '{名稱},{Ronin錢包地址},{私鑰}',
+};
+
+export const transactionCsvFormatI18n = {
+  [LANG.EN]: '{name},{slp_amount},{ronin_address}',
+  [LANG.ZH_TW]: '{名稱},{轉出SLP},{Ronin錢包地址}',
 };

@@ -7,6 +7,7 @@ import { transferAllSlp } from "../../api/transferSlp";
 import AddAxieAccountModal, {
   Payload,
 } from "../../components/AddAxieAccountModal";
+import ImportAxieAccountCsvModal from "../../components/ImportAxieAccountCsvModal";
 import LoadingMask from "../../components/LoadingMask";
 import * as i18n from "../../constants/locale";
 import useAxieAccounts from "../../hooks/useAxieAccounts";
@@ -34,6 +35,12 @@ function ModeClaim({ lang }: { lang: LANG }) {
     isModalOpen: isAddAxieAccountModalOpen,
     open: openAddAxieAccountModal,
     close: closeAddAxieAccountModal,
+  } = useModalHandlers();
+
+  const {
+    isModalOpen: isImportAxieAccountCsvModalOpen,
+    open: openImportAxieAccountCsvModal,
+    close: closeImportAxieAccountCsvModal,
   } = useModalHandlers();
 
   const claimSlp = useClaimSlp();
@@ -132,7 +139,7 @@ function ModeClaim({ lang }: { lang: LANG }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [lang]);
 
   const handleTransfer = useCallback(
     async (payload) => {
@@ -161,10 +168,10 @@ function ModeClaim({ lang }: { lang: LANG }) {
         setIsLoading(false);
       }
     },
-    [accounts]
+    [accounts, lang]
   );
 
-  const handleCsvImportClick = useCallback(() => {
+  const handleImportCsvModalSubmit = useCallback(() => {
     csvInput.current.value = "";
     localStorage.axieAccounts = JSON.stringify([]);
     setAccounts([]);
@@ -183,7 +190,6 @@ function ModeClaim({ lang }: { lang: LANG }) {
             const newAccounts = json.reduce(
               (result, { field1, field2, field3 }) => {
                 if (!testRoninAddress(field2) || !testPrivateKey(field3)) {
-                  console.log(`${field1} ${i18n.invalidAxieAccountI18n[lang]}`);
                   return result;
                 }
                 result.push({
@@ -197,13 +203,18 @@ function ModeClaim({ lang }: { lang: LANG }) {
               },
               [].concat(accounts)
             );
-            localStorage.axieAccounts = JSON.stringify(newAccounts);
-            setAccounts(newAccounts);
+            if (newAccounts.length > 0) {
+              localStorage.axieAccounts = JSON.stringify(newAccounts);
+              setAccounts(newAccounts);
+              closeImportAxieAccountCsvModal();
+            } else {
+              window.alert(i18n.invalidPrivateKeyErrI18n[lang]);
+            }
           });
       };
       reader.readAsText(file);
     },
-    [accounts]
+    [accounts, lang]
   );
   return (
     <>
@@ -219,7 +230,7 @@ function ModeClaim({ lang }: { lang: LANG }) {
           </div>
           <div className="float-left mb-6 ml-3">
             <button
-              onClick={handleCsvImportClick}
+              onClick={openImportAxieAccountCsvModal}
               className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
               {i18n.importCsvI18n[lang]}
@@ -345,6 +356,12 @@ function ModeClaim({ lang }: { lang: LANG }) {
         isModalOpen={isAddAxieAccountModalOpen}
         onSubmit={handleAddAxieAccountModalSubmit}
         onClose={closeAddAxieAccountModal}
+      />
+      <ImportAxieAccountCsvModal
+        lang={lang}
+        isModalOpen={isImportAxieAccountCsvModalOpen}
+        onSubmit={handleImportCsvModalSubmit}
+        onClose={closeImportAxieAccountCsvModal}
       />
       <LoadingMask show={isLoading} />
     </>
