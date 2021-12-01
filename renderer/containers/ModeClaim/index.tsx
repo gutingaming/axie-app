@@ -134,26 +134,6 @@ function ModeClaim({ lang }: { lang: LANG }) {
     }
   }, []);
 
-  const handleClaimAllSlp = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const results = await Promise.all(
-        accounts.map(({ ronin_address, private_key }) =>
-          claimSlp({
-            roninAddress: ronin_address,
-            privateKey: private_key,
-          })
-        )
-      );
-      console.log(results);
-      window.alert(i18n.batchClaimSlpSuccessI18n[lang]);
-    } catch (err) {
-      window.alert(`${i18n.batchClaimSlpFailedI18n[lang]}\n${err}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const handleTransfer = useCallback(
     async (payload) => {
       const {
@@ -258,14 +238,6 @@ function ModeClaim({ lang }: { lang: LANG }) {
               className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
               {i18n.refreshI18n[lang]}
-            </button>
-          </div>
-          <div className="float-right mb-6 ml-3">
-            <button
-              onClick={handleClaimAllSlp}
-              className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
-            >
-              {i18n.batchClaimSlpI18n[lang]}
             </button>
           </div>
         </div>
