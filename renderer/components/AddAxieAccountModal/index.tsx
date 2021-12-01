@@ -1,6 +1,8 @@
 import { FC, useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 
+import * as i18n from "../../constants/locale";
+import { LANG } from "../../hooks/useLang";
 import Modal, { Ref as ModalRef } from "../Modal";
 
 export type Payload = {
@@ -10,6 +12,7 @@ export type Payload = {
 };
 
 interface Props {
+  lang: LANG;
   isModalOpen: boolean;
   onSubmit: (
     payload: Payload
@@ -20,7 +23,12 @@ interface Props {
   onClose: () => void;
 }
 
-const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
+const AddAxieAccountModal: FC<Props> = ({
+  lang,
+  isModalOpen,
+  onSubmit,
+  onClose,
+}) => {
   const modalRef = useRef<ModalRef>(null);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +47,7 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     if (name === "" || roninAddress === "" || privateKey === "") {
-      setFormError("欄位皆為必填");
+      setFormError(i18n.formErrorI18n[lang]);
       setIsSubmitting(false);
       return;
     }
@@ -65,7 +73,7 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
   return (
     <Modal ref={modalRef} isOpen={isModalOpen} onClose={onClose}>
       <h2 className="mb-5 text-lg font-medium text-white title-font">
-        新增錢包
+        {i18n.addAxieAccountI18n[lang]}
       </h2>
       <div className="relative flex py-5 mx-auto sm:items-center">
         <div className="absolute inset-0 flex items-center justify-center w-6 h-full">
@@ -80,7 +88,7 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
               htmlFor="player-name"
               className="text-sm text-gray-400 leading-7"
             >
-              名稱
+              {i18n.nameI18n[lang]}
             </label>
             <input
               type="text"
@@ -106,7 +114,7 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
               htmlFor="ronin-address"
               className="text-sm text-gray-400 leading-7"
             >
-              Ronin 錢包位址
+              {i18n.walletAddressI18n[lang]}
             </label>
             <input
               type="text"
@@ -132,7 +140,7 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
               htmlFor="ronin-address"
               className="text-sm text-gray-400 leading-7"
             >
-              私鑰 (Private Key)
+              {i18n.privateKeyI18n[lang]}
             </label>
             <input
               type="text"
@@ -158,7 +166,7 @@ const AddAxieAccountModal: FC<Props> = ({ isModalOpen, onSubmit, onClose }) => {
         onClick={handleSubmit}
         disabled={isSubmitting}
       >
-        {isSubmitting ? "送出中..." : "送出"}
+        {isSubmitting ? i18n.submittingI18n[lang] : i18n.submitI18n[lang]}
       </button>
     </Modal>
   );

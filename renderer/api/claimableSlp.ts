@@ -15,15 +15,13 @@ const claimableSlp = async ({
   const {
     total,
     claimable_total,
-    blockchain_related: {
-      signature: { timestamp },
-    },
+    blockchain_related: { signature },
     last_claimed_item_at,
   } = await fetchRes.json();
   return {
     [address]: {
       amount: total - claimable_total,
-      isClaimable: last_claimed_item_at < timestamp,
+      isClaimable: last_claimed_item_at < signature?.timestamp,
     },
   };
 };

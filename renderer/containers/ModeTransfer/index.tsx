@@ -1,16 +1,19 @@
 import React, { useCallback, useRef, useState } from "react";
 import csvToJson from "csvtojson";
 
+import * as i18n from "../../constants/locale";
 import useAxieAccounts from "../../hooks/useAxieAccounts";
+import { LANG } from "../../hooks/useLang";
 import { transferSlp } from "../../api/transferSlp";
 
 type ToAccount = {
   [ronin_address: string]: {
+    name: string;
     outputSlp: number;
   };
 };
 
-function ModeTransfer() {
+function ModeTransfer({ lang }: { lang: LANG }) {
   const csvInput = useRef(null);
   const { accounts, forceUpdate, mainAccount, balances } = useAxieAccounts();
 
@@ -18,7 +21,7 @@ function ModeTransfer() {
     return (
       <div className="flex flex-col items-center justify-center w-screen mt-48">
         <p className="w-full mb-5 leading-relaxed text-center text-gray-400 lg:w-1/2 text-opacity-90">
-          你需要一個 Ronin 錢包
+          {i18n.requireAxieAccountI18n[lang]}
         </p>
       </div>
     );
@@ -72,11 +75,11 @@ function ModeTransfer() {
       const fromAddress = selectedRoninAddress;
       const privateKey = selectedPrivateKey;
       if (balances[fromAddress] === 0 || balances[fromAddress] < outputSlp) {
-        window.alert("餘額不足，無法進行轉帳。");
+        window.alert(i18n.notEnoughBalanceI18n[lang]);
         return;
       }
 
-      if (confirm("確認轉出資訊無誤，執行單筆轉帳？")) {
+      if (confirm(i18n.confirmTransferI18n[lang])) {
         setExecuting({
           ...executing,
           [toAddress]: true,
@@ -134,12 +137,16 @@ function ModeTransfer() {
       csvToJson({ noheader: true, ignoreEmpty: true })
         .fromString(result)
         .then((json) => {
-          const newToAccounts = json.reduce((result, { field1, field2 }) => {
-            result[field2] = {
-              outputSlp: field1 as number,
-            };
-            return result;
-          }, {});
+          const newToAccounts = json.reduce(
+            (result, { field1, field2, field3 }) => {
+              result[field3] = {
+                name: field1 as string,
+                outputSlp: field2 as number,
+              };
+              return result;
+            },
+            {}
+          );
           localStorage.toAccounts = JSON.stringify(newToAccounts);
           setToAccounts(newToAccounts);
         });
@@ -154,13 +161,13 @@ function ModeTransfer() {
           <thead>
             <tr>
               <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tl rounded-bl title-font">
-                名稱
+                {i18n.nameI18n[lang]}
               </th>
               <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                Ronin 錢包地址
+                {i18n.walletAddressI18n[lang]}
               </th>
               <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tr rounded-br title-font">
-                持有 SLP
+                {i18n.balanceI18n[lang]}
               </th>
             </tr>
           </thead>
@@ -193,7 +200,7 @@ function ModeTransfer() {
               onClick={handleCsvImportClick}
               className="inline-flex items-center float-right px-3 py-1 mr-3 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
-              匯入CSV
+              {i18n.importCsvI18n[lang]}
             </button>
             <input
               ref={csvInput}
@@ -205,51 +212,40 @@ function ModeTransfer() {
           </div>
           <div className="float-left mb-6">
             <p className="w-full text-sm text-gray-500 leading-8">
-              提醒：點擊轉帳成功並不會馬上看到交易明細，需稍待 30 秒至 1 分鐘。
+              {i18n.tipForTransferDetailI18n[lang]}
             </p>
           </div>
           <table className="w-full py-5 text-left text-gray-400 whitespace-no-wrap table-auto">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tl rounded-bl title-font">
-                  編號
+                  {i18n.nameI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  轉出錢包地址
+                  {i18n.slpAmtI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  轉出 SLP
+                  {i18n.toWalletAddressI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  轉入錢包地址
-                </th>
-                <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  操作
+                  {i18n.actionsI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tr rounded-br title-font">
-                  執行結果
+                  {i18n.execResultI18n[lang]}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {Object.keys(toAccounts).map((toAddress, id) => {
-                const { outputSlp } = toAccounts[toAddress];
+              {Object.keys(toAccounts).map((toAddress) => {
+                const { name, outputSlp } = toAccounts[toAddress];
                 return (
                   <tr key={toAddress}>
-                    <td className="px-4 py-3">{id + 1}</td>
-                    <td className="px-4 py-3">
-                      <div
-                        title={selectedRoninAddress}
-                        className="w-32 overflow-hidden overflow-ellipsis"
-                      >
-                        {selectedRoninAddress}
-                      </div>
-                    </td>
+                    <td className="px-4 py-3">{name}</td>
                     <td className="px-4 py-3">{outputSlp}</td>
                     <td className="px-4 py-3">
                       <div
                         title={toAddress}
-                        className="w-32 overflow-hidden overflow-ellipsis"
+                        className="w-full overflow-hidden overflow-ellipsis"
                       >
                         {toAddress}
                       </div>
@@ -261,7 +257,7 @@ function ModeTransfer() {
                         }
                         className="mr-5 cursor-pointer hover:text-white"
                       >
-                        轉帳
+                        {i18n.transferI18n[lang]}
                       </a>
                     </td>
                     <td className="px-4 py-3">
@@ -272,7 +268,7 @@ function ModeTransfer() {
                           rel="noreferrer noopener"
                           className="text-indigo-400 hover:text-indigo-500"
                         >
-                          轉帳成功
+                          {i18n.transactionDetailI18n[lang]}
                         </a>
                       ) : (
                         ""
@@ -282,7 +278,7 @@ function ModeTransfer() {
                       transactions[toAddress] ||
                       errors[toAddress]
                         ? ""
-                        : "執行中..."}
+                        : i18n.executingI18n[lang]}
                     </td>
                   </tr>
                 );

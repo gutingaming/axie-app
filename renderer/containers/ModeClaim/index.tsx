@@ -8,14 +8,16 @@ import AddAxieAccountModal, {
   Payload,
 } from "../../components/AddAxieAccountModal";
 import LoadingMask from "../../components/LoadingMask";
+import * as i18n from "../../constants/locale";
 import useAxieAccounts from "../../hooks/useAxieAccounts";
 import useClaimSlp from "../../hooks/useClaimSlp";
+import { LANG } from "../../hooks/useLang";
 import useModalHandlers from "../../hooks/useModalHandlers";
 import randomMessageAPI from "../../api/randomMessage";
 import jwtAccessToken from "../../api/jwtAccessToken";
 import { testPrivateKey, testRoninAddress } from "../../utils/validation";
 
-function ModeClaim() {
+function ModeClaim({ lang }: { lang: LANG }) {
   const csvInput = useRef(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -50,7 +52,7 @@ function ModeClaim() {
       );
       if (foundAccount) {
         result.success = false;
-        result.error = "錢包位址已存在";
+        result.error = i18n.redundantAxieAccountErrI18n[lang];
         return result;
       }
 
@@ -67,7 +69,7 @@ function ModeClaim() {
       } catch (err) {
         console.log(err);
         result.success = false;
-        result.error = "Ronin 錢包位址與私鑰不匹配";
+        result.error = i18n.invalidPrivateKeyErrI18n[lang];
         return result;
       }
 
@@ -100,7 +102,11 @@ function ModeClaim() {
 
   const handleAxieAccountDelete = useCallback(
     ({ name, ronin_address }) => {
-      if (confirm(`確定刪除錢包 ${name} ${ronin_address}`)) {
+      if (
+        confirm(
+          `${i18n.confirmAxieAccountDeleteI18n[lang]} ${name} ${ronin_address}`
+        )
+      ) {
         const newAccounts = accounts.filter(
           ({ ronin_address: roninAddress }) => roninAddress !== ronin_address
         );
@@ -119,10 +125,10 @@ function ModeClaim() {
         privateKey: payload.private_key,
       });
       console.log(result);
-      window.alert("收穫 SLP 成功");
+      window.alert(i18n.claimSlpSuccessI18n[lang]);
       forceUpdate();
     } catch (err) {
-      window.alert(`收穫 SLP 失敗\n${err}`);
+      window.alert(`${i18n.claimSlpFailedI18n[lang]}\n${err}`);
     } finally {
       setIsLoading(false);
     }
@@ -140,9 +146,9 @@ function ModeClaim() {
         )
       );
       console.log(results);
-      window.alert("批量收穫 SLP 成功");
+      window.alert(i18n.batchClaimSlpSuccessI18n[lang]);
     } catch (err) {
-      window.alert(`批量收穫 SLP 失敗\n${err}`);
+      window.alert(`${i18n.batchClaimSlpFailedI18n[lang]}\n${err}`);
     } finally {
       setIsLoading(false);
     }
@@ -166,11 +172,11 @@ function ModeClaim() {
           privateKey,
         });
         if (data.transactionHash) {
-          window.alert("轉帳成功");
+          window.alert(i18n.transferSuccessI18n[lang]);
           forceUpdate();
         }
       } catch (err) {
-        window.alert(`轉帳失敗\n${err}`);
+        window.alert(`${i18n.transferFailedI18n[lang]}\n${err}`);
       } finally {
         setIsLoading(false);
       }
@@ -197,7 +203,7 @@ function ModeClaim() {
             const newAccounts = json.reduce(
               (result, { field1, field2, field3 }) => {
                 if (!testRoninAddress(field2) || !testPrivateKey(field3)) {
-                  console.log(`${field1} is not a valid wallet`);
+                  console.log(`${field1} ${i18n.invalidAxieAccountI18n[lang]}`);
                   return result;
                 }
                 result.push({
@@ -228,7 +234,7 @@ function ModeClaim() {
               onClick={openAddAxieAccountModal}
               className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
-              新增錢包
+              {i18n.addAxieAccountI18n[lang]}
             </button>
           </div>
           <div className="float-left mb-6 ml-3">
@@ -236,7 +242,7 @@ function ModeClaim() {
               onClick={handleCsvImportClick}
               className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
-              匯入CSV
+              {i18n.importCsvI18n[lang]}
             </button>
             <input
               ref={csvInput}
@@ -251,7 +257,7 @@ function ModeClaim() {
               onClick={forceUpdate}
               className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
-              刷新資料
+              {i18n.refreshI18n[lang]}
             </button>
           </div>
           <div className="float-right mb-6 ml-3">
@@ -259,7 +265,7 @@ function ModeClaim() {
               onClick={handleClaimAllSlp}
               className="inline-flex items-center float-right px-3 py-1 text-base bg-gray-800 border-0 rounded focus:outline-none hover:bg-gray-700 md:mt-0"
             >
-              批量收穫SLP
+              {i18n.batchClaimSlpI18n[lang]}
             </button>
           </div>
         </div>
@@ -271,19 +277,19 @@ function ModeClaim() {
             <thead>
               <tr>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tl rounded-bl title-font">
-                  名稱
+                  {i18n.nameI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  Ronin 錢包地址
+                  {i18n.walletAddressI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  待收 SLP
+                  {i18n.unclaimedSlpI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 title-font">
-                  持有 SLP
+                  {i18n.balanceI18n[lang]}
                 </th>
                 <th className="px-4 py-3 text-sm font-medium tracking-wider text-white bg-gray-800 rounded-tr rounded-br title-font">
-                  操作
+                  {i18n.actionsI18n[lang]}
                 </th>
               </tr>
             </thead>
@@ -292,7 +298,7 @@ function ModeClaim() {
                 ({ is_main_account, name, ronin_address, private_key }) => (
                   <tr key={ronin_address}>
                     <td className="px-4 py-3">
-                      {name} {is_main_account ? "[主]" : ""}
+                      {name} {is_main_account ? i18n.mainAccountI18n[lang] : ""}
                     </td>
                     <td className="px-4 py-3">
                       <div
@@ -322,7 +328,7 @@ function ModeClaim() {
                         }
                         className="mr-5 cursor-pointer hover:text-white"
                       >
-                        收穫SLP
+                        {i18n.claimSlpI18n[lang]}
                       </a>
                       {!is_main_account && (
                         <a
@@ -335,7 +341,7 @@ function ModeClaim() {
                           }
                           className="mr-5 cursor-pointer hover:text-white"
                         >
-                          轉帳至主錢包
+                          {i18n.transferToMainI18n[lang]}
                         </a>
                       )}
                       {!is_main_account && (
@@ -343,7 +349,7 @@ function ModeClaim() {
                           onClick={() => handleSetMainAccount(ronin_address)}
                           className="mr-5 cursor-pointer hover:text-white"
                         >
-                          設為主錢包
+                          {i18n.setMainAxieAccountI18n[lang]}
                         </a>
                       )}
                       <a
@@ -352,7 +358,7 @@ function ModeClaim() {
                         }
                         className="mr-5 cursor-pointer hover:text-white"
                       >
-                        刪除
+                        {i18n.deleteAxieAccountI18n[lang]}
                       </a>
                     </td>
                   </tr>
@@ -363,6 +369,7 @@ function ModeClaim() {
         </div>
       </div>
       <AddAxieAccountModal
+        lang={lang}
         isModalOpen={isAddAxieAccountModalOpen}
         onSubmit={handleAddAxieAccountModalSubmit}
         onClose={closeAddAxieAccountModal}
