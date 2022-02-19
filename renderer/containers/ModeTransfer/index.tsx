@@ -12,6 +12,7 @@ type ToAccount = {
   [ronin_address: string]: {
     name: string;
     outputSlp: number;
+    address: string;
   };
 };
 
@@ -151,9 +152,10 @@ function ModeTransfer({ lang }: { lang: LANG }) {
               if (Number.isNaN(Number(field2))) {
                 return result;
               }
-              result[field3] = {
+              result[`${field1}-${field3}`] = {
                 name: field1 as string,
                 outputSlp: field2 as number,
+                address: field3 as string,
               };
               return result;
             },
@@ -253,24 +255,24 @@ function ModeTransfer({ lang }: { lang: LANG }) {
               </tr>
             </thead>
             <tbody>
-              {Object.keys(toAccounts).map((toAddress) => {
-                const { name, outputSlp } = toAccounts[toAddress];
+              {Object.keys(toAccounts).map((key) => {
+                const { name, outputSlp, address } = toAccounts[key];
                 return (
-                  <tr key={toAddress}>
+                  <tr key={address}>
                     <td className="px-4 py-3">{name}</td>
                     <td className="px-4 py-3">{outputSlp}</td>
                     <td className="px-4 py-3">
                       <div
-                        title={toAddress}
+                        title={address}
                         className="w-full overflow-hidden overflow-ellipsis"
                       >
-                        {toAddress}
+                        {address}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <a
                         onClick={() =>
-                          handleSingleTransfer(outputSlp, toAddress)
+                          handleSingleTransfer(outputSlp, address)
                         }
                         className="mr-5 cursor-pointer hover:text-white"
                       >
@@ -278,9 +280,9 @@ function ModeTransfer({ lang }: { lang: LANG }) {
                       </a>
                     </td>
                     <td className="px-4 py-3">
-                      {transactions[toAddress] ? (
+                      {transactions[address] ? (
                         <a
-                          href={`https://explorer.roninchain.com/tx/${transactions[toAddress]}`}
+                          href={`https://explorer.roninchain.com/tx/${transactions[address]}`}
                           target="_blank"
                           rel="noreferrer noopener"
                           className="text-indigo-400 hover:text-indigo-500"
@@ -290,10 +292,10 @@ function ModeTransfer({ lang }: { lang: LANG }) {
                       ) : (
                         ""
                       )}
-                      {errors[toAddress] ? errors[toAddress] : ""}
-                      {!executing[toAddress] ||
-                      transactions[toAddress] ||
-                      errors[toAddress]
+                      {errors[address] ? errors[address] : ""}
+                      {!executing[address] ||
+                      transactions[address] ||
+                      errors[address]
                         ? ""
                         : i18n.executingI18n[lang]}
                     </td>
