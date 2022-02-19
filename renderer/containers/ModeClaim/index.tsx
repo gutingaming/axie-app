@@ -124,22 +124,25 @@ function ModeClaim({ lang }: { lang: LANG }) {
     [accounts]
   );
 
-  const handleClaimSlp = useCallback(async (payload) => {
-    try {
-      setIsLoading(true);
-      const result = await claimSlp({
-        roninAddress: payload.ronin_address,
-        privateKey: payload.private_key,
-      });
-      console.log(result);
-      window.alert(i18n.claimSlpSuccessI18n[lang]);
-      forceUpdate();
-    } catch (err) {
-      window.alert(`${i18n.claimSlpFailedI18n[lang]}\n${err}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [lang]);
+  const handleClaimSlp = useCallback(
+    async (payload) => {
+      try {
+        setIsLoading(true);
+        const result = await claimSlp({
+          roninAddress: payload.ronin_address,
+          privateKey: payload.private_key,
+        });
+        console.log(result);
+        window.alert(i18n.claimSlpSuccessI18n[lang]);
+        forceUpdate();
+      } catch (err) {
+        window.alert(`${i18n.claimSlpFailedI18n[lang]}\n${err}`);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [lang]
+  );
 
   const handleTransfer = useCallback(
     async (payload) => {
@@ -299,7 +302,9 @@ function ModeClaim({ lang }: { lang: LANG }) {
                           : ""
                       )}
                     >
-                      {claimableSlp[ronin_address]?.amount}
+                      {isNaN(claimableSlp[ronin_address]?.amount)
+                        ? "N/A"
+                        : claimableSlp[ronin_address]?.amount}
                     </td>
                     <td className="w-16 px-4 py-3">
                       {balances[ronin_address]}
