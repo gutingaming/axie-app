@@ -1,7 +1,7 @@
 {
   "name": "axie-infinity-claim-tool",
   "description": "Provide axie account manager a fast and less complex way to claim and transfer SLP to scholar.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
