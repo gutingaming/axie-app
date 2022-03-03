@@ -8,12 +8,15 @@ import useModalHandlers from "../../hooks/useModalHandlers";
 import { transferSlp } from "../../api/transferSlp";
 import ImportTransactionCsvModal from "../../components/ImportTransactionCsvModal";
 
+type Account = {
+  id: string;
+  name: string;
+  outputSlp: number;
+  address: string;
+};
+
 type ToAccount = {
-  [ronin_address: string]: {
-    name: string;
-    outputSlp: number;
-    address: string;
-  };
+  [id: string]: Account;
 };
 
 function ModeTransfer({ lang }: { lang: LANG }) {
@@ -65,10 +68,10 @@ function ModeTransfer({ lang }: { lang: LANG }) {
   );
 
   const changeError = useCallback(
-    (error: string, ronin_address: string) => {
+    (error: string, account: Account) => {
       const newErrors = {
         ...errors,
-        [ronin_address]: `${error}`,
+        [account.id]: `${error}`,
       };
       localStorage.errors = JSON.stringify(newErrors);
       setErrors(newErrors);
@@ -80,9 +83,10 @@ function ModeTransfer({ lang }: { lang: LANG }) {
     setSelectedRoninAddress(e.target.value);
   }, []);
   const handleSingleTransfer = useCallback(
-    (outputSlp: number, toAddress: string) => {
+    (outputSlp: number, account: Account) => {
       const fromAddress = selectedRoninAddress;
       const privateKey = selectedPrivateKey;
+
       if (balances[fromAddress] === 0 || balances[fromAddress] < outputSlp) {
         window.alert(i18n.notEnoughBalanceI18n[lang]);
         return;
@@ -91,29 +95,28 @@ function ModeTransfer({ lang }: { lang: LANG }) {
       if (confirm(i18n.confirmTransferI18n[lang])) {
         setExecuting({
           ...executing,
-          [toAddress]: true,
+          [account.id]: true,
         });
         transferSlp({
           fromAddress,
-          toAddress,
+          toAddress: account.address,
           privateKey,
-          balance: Number(toAccounts[toAddress].outputSlp),
+          balance: Number(outputSlp),
         })
           .then((data) => {
             const { to: roninAddress, transactionHash } = data;
             const ethAddresss = roninAddress.replace("0x", "ronin:");
-            console.log(data);
             if (transactionHash) {
               changeTransaction(transactionHash, ethAddresss);
             }
           })
           .catch((err) => {
-            changeError(err, toAddress);
+            changeError(err, account);
           })
           .finally(() => {
             setExecuting({
               ...executing,
-              [toAddress]: false,
+              [account.id]: false,
             });
             forceUpdate();
           });
@@ -139,39 +142,43 @@ function ModeTransfer({ lang }: { lang: LANG }) {
     setTransactions({});
     csvInput.current.click();
   }, [setTransactions, setErrors]);
-  const handleCsvImport = useCallback((e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const result = event.target.result.toString();
-      csvToJson({ noheader: true, ignoreEmpty: true })
-        .fromString(result)
-        .then((json) => {
-          const newToAccounts = json.reduce(
-            (result, { field1, field2, field3 }) => {
-              if (Number.isNaN(Number(field2))) {
+  const handleCsvImport = useCallback(
+    (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const result = event.target.result.toString();
+        csvToJson({ noheader: true, ignoreEmpty: true })
+          .fromString(result)
+          .then((json) => {
+            const newToAccounts = json.reduce(
+              (result, { field1, field2, field3 }) => {
+                if (Number.isNaN(Number(field2))) {
+                  return result;
+                }
+                result[`${field1}-${field3}`] = {
+                  id: `${field1}-${field3}` as string,
+                  name: field1 as string,
+                  outputSlp: field2 as number,
+                  address: field3 as string,
+                };
                 return result;
-              }
-              result[`${field1}-${field3}`] = {
-                name: field1 as string,
-                outputSlp: field2 as number,
-                address: field3 as string,
-              };
-              return result;
-            },
-            {}
-          );
-          if (Object.keys(newToAccounts).length > 0) {
-            localStorage.toAccounts = JSON.stringify(newToAccounts);
-            setToAccounts(newToAccounts);
-            closeImportTransactionModal();
-          } else {
-            window.alert(i18n.invalidCsvFormatI18n[lang]);
-          }
-        });
-    };
-    reader.readAsText(file);
-  }, [lang]);
+              },
+              {}
+            );
+            if (Object.keys(newToAccounts).length > 0) {
+              localStorage.toAccounts = JSON.stringify(newToAccounts);
+              setToAccounts(newToAccounts);
+              closeImportTransactionModal();
+            } else {
+              window.alert(i18n.invalidCsvFormatI18n[lang]);
+            }
+          });
+      };
+      reader.readAsText(file);
+    },
+    [lang]
+  );
 
   return (
     <>
@@ -201,7 +208,7 @@ function ModeTransfer({ lang }: { lang: LANG }) {
                     <option
                       key={ronin_address}
                       value={ronin_address}
-                      selected={is_main_account}
+                      defaultValue={is_main_account ? ronin_address : ""}
                     >
                       {name}
                     </option>
@@ -256,9 +263,10 @@ function ModeTransfer({ lang }: { lang: LANG }) {
             </thead>
             <tbody>
               {Object.keys(toAccounts).map((key) => {
-                const { name, outputSlp, address } = toAccounts[key];
+                const account = toAccounts[key];
+                const { name, outputSlp, address } = account;
                 return (
-                  <tr key={address}>
+                  <tr key={key}>
                     <td className="px-4 py-3">{name}</td>
                     <td className="px-4 py-3">{outputSlp}</td>
                     <td className="px-4 py-3">
@@ -271,9 +279,7 @@ function ModeTransfer({ lang }: { lang: LANG }) {
                     </td>
                     <td className="px-4 py-3">
                       <a
-                        onClick={() =>
-                          handleSingleTransfer(outputSlp, address)
-                        }
+                        onClick={() => handleSingleTransfer(outputSlp, account)}
                         className="mr-5 cursor-pointer hover:text-white"
                       >
                         {i18n.transferI18n[lang]}
@@ -292,10 +298,8 @@ function ModeTransfer({ lang }: { lang: LANG }) {
                       ) : (
                         ""
                       )}
-                      {errors[address] ? errors[address] : ""}
-                      {!executing[address] ||
-                      transactions[address] ||
-                      errors[address]
+                      {errors[key] ? errors[key] : ""}
+                      {!executing[key] || transactions[address] || errors[key]
                         ? ""
                         : i18n.executingI18n[lang]}
                     </td>
